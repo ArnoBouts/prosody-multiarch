@@ -1,0 +1,31 @@
+pipeline:
+
+  amd64:
+    image: plugins/docker
+    registry: no-cloud.fr
+    repo: no-cloud.fr/prosody-amd64
+    tag: latest
+    dockerfile: Dockerfile.amd64
+
+  arm32v7:
+    image: plugins/docker
+    registry: no-cloud.fr
+    repo: no-cloud.fr/prosody-arm
+    tag: latest
+    dockerfile: Dockerfile.arm
+
+  multiarch:
+    image: docker:dind
+    environment:
+      - DOCKER_CLI_EXPERIMENTAL=enabled
+    commands:
+      - docker manifest create no-cloud.fr/prosody-multiarch no-cloud.fr/prosody-arm no-cloud.fr/prosody-amd64
+      - docker manifest annotate no-cloud.fr/prosody-multiarch no-cloud.fr/prosody-amd64 --arch amd64
+      - docker manifest annotate no-cloud.fr/prosody-multiarch no-cloud.fr/prosody-arm --arch arm
+      - docker manifest push no-cloud.fr/prosody-multiarch
+
+  notify:
+    image: no-cloud.fr/drone-xmpp
+    secrets: [ xmpp_host, xmpp_jid, xmpp_password, xmpp_to ]
+    when:
+      status: [ success, failure ]
